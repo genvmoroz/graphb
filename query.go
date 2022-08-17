@@ -3,8 +3,6 @@ package graphb
 import (
 	"fmt"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 // Query represents a GraphQL query.
@@ -35,17 +33,17 @@ func (q *Query) StringChan() (<-chan string, error) {
 
 	if err := q.check(); err != nil {
 		close(ch)
-		return ch, errors.WithStack(err)
+		return ch, err
 	}
 
 	for _, f := range q.Fields {
 		if f == nil {
 			close(ch)
-			return ch, errors.WithStack(NilFieldErr{})
+			return ch, NilFieldErr{}
 		}
 		if err := f.check(); err != nil {
 			close(ch)
-			return ch, errors.WithStack(err)
+			return ch, err
 		}
 	}
 	return q.stringChan(), nil
@@ -81,24 +79,20 @@ func (q *Query) stringChan() <-chan string {
 func (q *Query) check() error {
 	// check query
 	if !isValidOperationType(q.Type) {
-		return errors.WithStack(InvalidOperationTypeErr{q.Type})
+		return InvalidOperationTypeErr{q.Type}
 	}
 	if err := q.checkName(); err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	return nil
 }
 
 func (q *Query) checkName() error {
 	if q.Name != "" && !validName.MatchString(q.Name) {
-		return errors.WithStack(InvalidNameErr{operationName, q.Name})
+		return InvalidNameErr{operationName, q.Name}
 	}
 	return nil
 }
-
-////////////////
-// Public API //
-////////////////
 
 // MakeQuery constructs a Query of the given type and returns a pointer of it.
 func MakeQuery(Type operationType) *Query {
@@ -109,7 +103,7 @@ func MakeQuery(Type operationType) *Query {
 func (q *Query) JSON() (string, error) {
 	strCh, err := q.StringChan()
 	if err != nil {
-		return "", errors.WithStack(err)
+		return "", err
 	}
 	s := StringFromChan(strCh)
 	return fmt.Sprintf(`{"query":"%s"}`, strings.Replace(s, `"`, `\"`, -1)), nil

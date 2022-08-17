@@ -1,9 +1,5 @@
 package graphb
 
-import (
-	"github.com/pkg/errors"
-)
-
 // Field is a recursive data struct which represents a GraphQL query field.
 type Field struct {
 	Name      string
@@ -30,7 +26,7 @@ func (f *Field) StringChan() (<-chan string, error) {
 		// return a closed channel instead of nil for receiving from nil blocks forever, hard to debug and confusing to users.
 		ch := make(chan string)
 		close(ch)
-		return ch, errors.WithStack(err)
+		return ch, err
 	}
 	return f.stringChan(), nil
 }
@@ -86,10 +82,10 @@ func (f *Field) stringChan() <-chan string {
 
 func (f *Field) check() error {
 	if err := f.checkCycle(); err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	if err := f.checkOther(); err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	return nil
 }
@@ -98,21 +94,21 @@ func (f *Field) check() error {
 func (f *Field) checkOther() error {
 	// Check validity of names
 	if !validName.MatchString(f.Name) {
-		return errors.WithStack(InvalidNameErr{fieldName, f.Name})
+		return InvalidNameErr{fieldName, f.Name}
 	}
 	if err := f.checkAlias(); err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	for _, arg := range f.Arguments {
 		if !validName.MatchString(arg.Name) {
-			return errors.WithStack(InvalidNameErr{argumentName, arg.Name})
+			return InvalidNameErr{argumentName, arg.Name}
 		}
 	}
 
 	// Check sub fields
 	for _, subF := range f.Fields {
 		if err := subF.checkOther(); err != nil {
-			return errors.WithStack(err)
+			return err
 		}
 	}
 	return nil
@@ -120,7 +116,7 @@ func (f *Field) checkOther() error {
 
 func (f *Field) checkAlias() error {
 	if f.Alias != "" && !validName.MatchString(f.Alias) {
-		return errors.WithStack(InvalidNameErr{aliasName, f.Alias})
+		return InvalidNameErr{aliasName, f.Alias}
 	}
 	return nil
 }
@@ -128,14 +124,10 @@ func (f *Field) checkAlias() error {
 // todo: reports the cycle path
 func (f *Field) checkCycle() error {
 	if err := reach(f, f); err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	return nil
 }
-
-////////////////
-// Public API //
-////////////////
 
 // MakeField constructs a Field of given name and return the pointer to this Field.
 func MakeField(name string) *Field {
@@ -153,7 +145,7 @@ func (f *Field) AddArguments(argument ...Argument) *Field {
 	return f
 }
 
-// SetFields sets the sub fields of a Field and return the pointer to this Field.
+// SetFields sets the subfields of a Field and return the pointer to this Field.
 func (f *Field) SetFields(fs ...*Field) *Field {
 	f.Fields = fs
 	return f
@@ -165,20 +157,17 @@ func (f *Field) SetAlias(alias string) *Field {
 	return f
 }
 
-/////////////
-// Helpers //
-/////////////
 // reach checks if f1 can be reached by f2 either directly (itself) or indirectly (children)
 func reach(f1, f2 *Field) error {
 	if f1 == nil || f2 == nil {
-		return errors.WithStack(NilFieldErr{})
+		return NilFieldErr{}
 	}
 	for _, field := range f2.Fields {
 		if f1 == field {
-			return errors.WithStack(CyclicFieldErr{*f1})
+			return CyclicFieldErr{*f1}
 		}
 		if err := reach(f1, field); err != nil {
-			return errors.WithStack(err)
+			return err
 		}
 	}
 	return nil

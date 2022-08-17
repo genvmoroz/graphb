@@ -55,10 +55,6 @@ __The library catches cycles.__ That is, if you have a `Field` whose sub Fields 
 
 I hesitate to make all fields private and only allow constructing a query through `NewQuery` and `MakeQuery`. I also don't know if `MakeQuery` is better than `NewQuery` or the contrary. __Please use it and give feedback__.
 
-## Error Handling
-All `graphb` errors are wrapped by [pkg/errors](https://github.com/pkg/errors).  
-All error types are defined in [error.go](error.go)
-
 ## Test
 `graphb` uses [testify/assert](https://github.com/stretchr/testify/#assert-package).
 ```bash

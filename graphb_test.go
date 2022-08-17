@@ -3,7 +3,6 @@ package graphb
 import (
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -79,13 +78,13 @@ func TestTheWholePackage(t *testing.T) {
 			Fields: []*Field{f2},
 		}
 		strCh, err := q.StringChan()
-		assert.IsTypef(t, CyclicFieldErr{}, errors.Cause(err), "")
+		assert.IsTypef(t, CyclicFieldErr{}, err, "")
 		value, ok := <-strCh
 		assert.Equal(t, "", value)
 		assert.Equal(t, false, ok)
 
 		strCh, err = f.StringChan()
-		assert.IsTypef(t, CyclicFieldErr{}, errors.Cause(err), "")
+		assert.IsTypef(t, CyclicFieldErr{}, err, "")
 		value, ok = <-strCh
 		assert.Equal(t, "", value)
 		assert.Equal(t, false, ok)
@@ -93,16 +92,16 @@ func TestTheWholePackage(t *testing.T) {
 
 	t.Run("name validation", func(t *testing.T) {
 		q := NewQuery(TypeQuery, OfName("我"))
-		assert.IsType(t, InvalidNameErr{}, errors.Cause(q.E))
+		assert.ErrorAs(t, q.E, &InvalidNameErr{})
 
 		q = NewQuery(TypeQuery, OfName("_我"))
-		assert.IsType(t, InvalidNameErr{}, errors.Cause(q.E))
+		assert.ErrorAs(t, q.E, &InvalidNameErr{})
 
 		q = NewQuery(TypeMutation, OfName("x-x"))
-		assert.IsType(t, InvalidNameErr{}, errors.Cause(q.E))
+		assert.ErrorAs(t, q.E, &InvalidNameErr{})
 
 		q = NewQuery(TypeMutation, OfName("x x"))
-		assert.IsType(t, InvalidNameErr{}, errors.Cause(q.E))
+		assert.ErrorAs(t, q.E, &InvalidNameErr{})
 
 		q = NewQuery(TypeSubscription, OfName("_1x1_1x1_"))
 		assert.Nil(t, q.E)
@@ -153,7 +152,7 @@ func TestTheWholePackage(t *testing.T) {
 	t.Run("Nil field error 2", func(t *testing.T) {
 		f := Field{Fields: []*Field{nil}}
 		err := f.checkCycle()
-		assert.IsTypef(t, NilFieldErr{}, errors.Cause(err), "")
+		assert.ErrorAs(t, err, &NilFieldErr{})
 	})
 }
 

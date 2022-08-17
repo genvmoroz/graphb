@@ -46,6 +46,11 @@ func TestArgumentBool(t *testing.T) {
 	assert.Equal(t, Argument{"blocked", argBool(false)}, a)
 }
 
+func TestArgumentRaw(t *testing.T) {
+	a := ArgumentRaw("blocked", "Value")
+	assert.Equal(t, Argument{"blocked", argRaw("Value")}, a)
+}
+
 func TestArgumentInt(t *testing.T) {
 	a := ArgumentInt("blocked", 1)
 	assert.Equal(t, Argument{"blocked", argInt(1)}, a)
@@ -71,6 +76,16 @@ func Test_argBool(t *testing.T) {
 	i := 0
 	for str := range b.stringChan() {
 		assert.Equal(t, "true", str)
+		i++
+	}
+	assert.Equal(t, 1, i)
+}
+
+func Test_argRaw(t *testing.T) {
+	b := argRaw("Value")
+	i := 0
+	for str := range b.stringChan() {
+		assert.Equal(t, "Value", str)
 		i++
 	}
 	assert.Equal(t, 1, i)

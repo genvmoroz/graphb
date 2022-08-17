@@ -3,11 +3,7 @@
 
 package graphb
 
-import (
-	"strings"
-
-	"github.com/pkg/errors"
-)
+import "strings"
 
 // StringFromChan builds a string from a channel, assuming the channel has been closed.
 func StringFromChan(c <-chan string) string {
@@ -18,10 +14,6 @@ func StringFromChan(c <-chan string) string {
 	return strings.Join(strs, "")
 }
 
-///////////////////
-// Field Factory //
-///////////////////
-
 // NewField uses functional options to construct a new Field and returns the pointer to it.
 // On error, the pointer is nil.
 // To know more about this design pattern, see https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
@@ -29,7 +21,7 @@ func NewField(name string, options ...FieldOptionInterface) *Field {
 	f := &Field{Name: name}
 	for _, op := range options {
 		if err := op.runFieldOption(f); err != nil {
-			f.E = errors.WithStack(err)
+			f.E = err
 			return f
 		}
 	}
@@ -60,7 +52,7 @@ func OfFields(name ...string) FieldOption {
 func OfAlias(alias string) FieldOption {
 	return func(f *Field) error {
 		f.Alias = alias
-		return errors.WithStack(f.checkAlias())
+		return f.checkAlias()
 	}
 }
 
@@ -72,10 +64,6 @@ func OfArguments(arguments ...Argument) FieldOption {
 	}
 }
 
-///////////////////
-// Query Factory //
-///////////////////
-
 // NewQuery uses functional options to construct a new Query and returns the pointer to it.
 // On error, the pointer is nil.
 // Type is required.
@@ -86,7 +74,7 @@ func NewQuery(Type operationType, options ...QueryOptionInterface) *Query {
 
 	for _, op := range options {
 		if err := op.runQueryOption(q); err != nil {
-			q.E = errors.WithStack(err)
+			q.E = err
 			return q
 		}
 	}
@@ -110,15 +98,12 @@ func OfName(name string) QueryOption {
 	return func(query *Query) error {
 		query.Name = name
 		if err := query.checkName(); err != nil {
-			return errors.WithStack(err)
+			return err
 		}
 		return nil
 	}
 }
 
-////////////////////////////
-// fieldContainer Factory //
-////////////////////////////
 type fieldContainer interface {
 	getFields() []*Field
 	setFields([]*Field)
@@ -144,7 +129,7 @@ func OfField(name string, options ...FieldOptionInterface) FieldContainerOption 
 	return func(fc fieldContainer) error {
 		f := NewField(name, options...)
 		if f.E != nil {
-			return errors.WithStack(f.E)
+			return f.E
 		}
 		fc.setFields(append(fc.getFields(), f))
 		return nil
@@ -154,9 +139,12 @@ func OfField(name string, options ...FieldOptionInterface) FieldContainerOption 
 // Fields takes a list of strings and make them a slice of *Field.
 // This is useful when you want fields with no sub fields.
 // For example:
+//
 //	query { courses { id, key } }
+//
 // can be written as:
-// 	Query{
+//
+//	Query{
 //		Type: "query",
 //		Fields: []*Field{
 //			{

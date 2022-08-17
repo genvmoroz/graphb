@@ -48,6 +48,10 @@ func ArgumentAny(name string, value interface{}) (Argument, error) {
 	}
 }
 
+func ArgumentRaw(name string, value string) Argument {
+	return Argument{name, argRaw(value)}
+}
+
 func ArgumentBool(name string, value bool) Argument {
 	return Argument{name, argBool(value)}
 }
@@ -85,10 +89,6 @@ func ArgumentCustomTypeSliceElem(values ...Argument) []Argument {
 	return values
 }
 
-/////////////////////////////
-// Primitive Wrapper Types //
-/////////////////////////////
-
 // argBool represents a boolean value.
 type argBool bool
 
@@ -96,6 +96,18 @@ func (v argBool) stringChan() <-chan string {
 	tokenChan := make(chan string)
 	go func() {
 		tokenChan <- fmt.Sprintf("%t", v)
+		close(tokenChan)
+	}()
+	return tokenChan
+}
+
+// argRaw represents a boolean value.
+type argRaw string
+
+func (v argRaw) stringChan() <-chan string {
+	tokenChan := make(chan string)
+	go func() {
+		tokenChan <- string(v)
 		close(tokenChan)
 	}()
 	return tokenChan
@@ -124,10 +136,6 @@ func (v argString) stringChan() <-chan string {
 	}()
 	return tokenChan
 }
-
-//////////////////////////////////
-// Primitive List Wrapper Types //
-//////////////////////////////////
 
 // argBoolSlice implements valueSlice
 type argBoolSlice []bool
